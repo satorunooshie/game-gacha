@@ -21,3 +21,4 @@ db/data
 # GoLand
 .idea/*
 .env
+.DS_Store
