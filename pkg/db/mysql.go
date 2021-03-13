@@ -21,7 +21,7 @@ func init() {
 	// user:password@tcp(host:port)/database
 	var err error
 	Conn, err = sql.Open(constant.DriverName,
-		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, database))
+		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Asia%%2FTokyo", user, password, host, port, database))
 	if err != nil {
 		log.Fatal(err)
 	}
