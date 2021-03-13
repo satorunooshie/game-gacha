@@ -4,11 +4,16 @@ import (
 	"log"
 	"net/http"
 
+	"game-gacha/pkg/http/middleware"
 	"game-gacha/pkg/server/handler"
 )
 
 func Serve(addr string) {
 	http.HandleFunc("/setting/get", get(handler.HandleSettingGet()))
+	http.HandleFunc("/user/create", post(handler.HandleUserCreate()))
+
+	http.HandleFunc("/user/get", get(middleware.Authenticate(handler.HandleUserGet())))
+	http.HandleFunc("/user/update", post(middleware.Authenticate(handler.HandleUserUpdate())))
 
 	log.Println("Server is running ...")
 	if err := http.ListenAndServe(addr, nil); err != nil {
