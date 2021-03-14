@@ -32,6 +32,10 @@ func SelectUserByPK(userID string) (*User, error) {
 	row := db.Conn.QueryRow("SELECT * FROM users WHERE id = ?", userID)
 	return convertToUser(row)
 }
+func SelectUserByPKForUpdate(tx *sql.Tx, userID string) (*User, error) {
+	row := tx.QueryRow("SELECT * FROM users WHERE id = ? FOR UPDATE", userID)
+	return convertToUser(row)
+}
 func SelectUserByAuthToken(authToken string) (*User, error) {
 	row := db.Conn.QueryRow("SELECT * FROM users WHERE auth_token = ?", authToken)
 	return convertToUser(row)
@@ -42,6 +46,16 @@ func UpdateUserByPK(user *User) error {
 		return err
 	}
 	if _, err = stmt.Exec(user.Name, user.HighScore, user.Coin, time.Now(), user.ID); err != nil {
+		return err
+	}
+	return nil
+}
+func UpdateUserCoinByPK(tx *sql.Tx, coin int, userID string) error {
+	stmt, err := tx.Prepare("UPDATE users SET coin = ?, updated_at = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	if _, err = stmt.Exec(coin, time.Now(), userID); err != nil {
 		return err
 	}
 	return nil
