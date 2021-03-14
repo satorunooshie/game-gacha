@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"game-gacha/pkg/constant"
 	"game-gacha/pkg/db"
 )
 
@@ -45,6 +46,13 @@ func UpdateUserByPK(user *User) error {
 	}
 	return nil
 }
+func SelectUsersOrderByHighScore(startPosition, limit int) ([]*User, error) {
+	rows, err := db.Conn.Query("SELECT * FROM users WHERE high_score > 0 ORDER BY high_score DESC, id ASC LIMIT ? OFFSET ?", limit, startPosition)
+	if err != nil {
+		return nil, err
+	}
+	return convertToUsers(rows)
+}
 func convertToUser(row *sql.Row) (*User, error) {
 	user := User{}
 	if err := row.Scan(&user.ID, &user.AuthToken, &user.Name, &user.HighScore, &user.Coin, &user.CreatedAt, &user.UpdatedAt); err != nil {
@@ -54,4 +62,15 @@ func convertToUser(row *sql.Row) (*User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+func convertToUsers(rows *sql.Rows) ([]*User, error) {
+	users := make([]*User, 0, constant.RankingLimit)
+	for rows.Next() {
+		user := User{}
+		if err := rows.Scan(&user.ID, &user.AuthToken, &user.Name, &user.HighScore, &user.Coin, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
 }
