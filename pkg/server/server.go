@@ -16,6 +16,7 @@ func Serve(addr string) {
 	http.HandleFunc("/user/update", post(middleware.Authenticate(handler.HandleUserUpdate())))
 
 	http.HandleFunc("/game/finish", post(middleware.Authenticate(handler.HandleGameFinish())))
+	http.HandleFunc("/collection/list", get(middleware.Authenticate(handler.HandleCollectionList())))
 
 	log.Println("Server is running ...")
 	if err := http.ListenAndServe(addr, nil); err != nil {
