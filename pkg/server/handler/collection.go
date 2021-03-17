@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/http/response"
 	"game-gacha/pkg/server/service"
 )
@@ -38,7 +39,7 @@ func (h *collectionHandler) HandleCollectionList(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	userID := dcontext.GetUserIDFromContext(ctx)
 	if userID == "" {
-		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		h.HttpResponse.Failed(w, "userID is empty", derror.ErrEmptyUserID, http.StatusInternalServerError)
 		return
 	}
 	res, err := h.CollectionService.CollectionList(userID)

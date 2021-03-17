@@ -46,14 +46,14 @@ func (h *gachaHandler) HandleGachaDraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if drawRequest.Times <= 0 {
-		h.HttpResponse.Failed(w, fmt.Sprintf("request times is invalid. request times=%d", drawRequest.Times), nil, http.StatusBadRequest)
+		h.HttpResponse.Failed(w, fmt.Sprintf("request times is invalid. request times=%d", drawRequest.Times), fmt.Errorf("%w. request times=%d", derror.ErrInvalidRequest, drawRequest.Times), http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
 	userID := dcontext.GetUserIDFromContext(ctx)
 	if userID == "" {
-		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		h.HttpResponse.Failed(w, "userID is empty", derror.ErrEmptyUserID, http.StatusInternalServerError)
 		return
 	}
 
