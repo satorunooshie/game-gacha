@@ -6,7 +6,12 @@ import (
 )
 
 var (
-	ErrCoinShortage = errors.New("coin is not enough")
+	ErrCoinShortage   = errors.New("coin is not enough")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrEmptyUserID    = errors.New("userID is empty")
+	ErrEmptyToken     = errors.New("x-token is empty")
+	ErrEmptyRequest   = errors.New("request body is empty")
+	ErrInvalidRequest = errors.New("request is invalid")
 )
 
 type ApplicationError struct {

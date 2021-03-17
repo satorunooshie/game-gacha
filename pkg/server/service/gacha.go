@@ -56,7 +56,7 @@ func (s *gachaService) GachaDraw(userID string, times int) (*gachaDrawResponse, 
 			return err
 		}
 		if user == nil {
-			return fmt.Errorf("user not found. userID=%s", userID)
+			return fmt.Errorf("%w. userID=%s", derror.ErrUserNotFound, userID)
 		}
 		remainingCoins := user.Coin - (times * constant.GachaCoinConsumption)
 		if remainingCoins < 0 {
