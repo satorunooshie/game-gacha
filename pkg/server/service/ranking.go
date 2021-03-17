@@ -13,12 +13,24 @@ type rank struct {
 	Rank     int
 	Score    int
 }
+type rankingService struct {
+	UserRepository model.UserRepositoryInterface
+}
+type RankingServiceInterface interface {
+	RankingList(userID string, startPosition, limit int) (*rankingListResponse, error)
+}
 
-func RankingList(userID string, startPosition, limit int) (*rankingListResponse, error) {
-	if _, err := model.SelectUserByPK(userID); err != nil {
+func NewRankingService(userRepository model.UserRepositoryInterface) *rankingService {
+	return &rankingService{
+		UserRepository: userRepository,
+	}
+}
+
+func (s *rankingService) RankingList(userID string, startPosition, limit int) (*rankingListResponse, error) {
+	if _, err := s.UserRepository.SelectUserByPK(userID); err != nil {
 		return nil, err
 	}
-	users, err := model.SelectUsersOrderByHighScore(startPosition-1, limit)
+	users, err := s.UserRepository.SelectUsersOrderByHighScore(startPosition-1, limit)
 	if err != nil {
 		return nil, err
 	}

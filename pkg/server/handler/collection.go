@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
@@ -21,33 +20,43 @@ type collection struct {
 	HasItem      bool   `json:"hasItem"`
 }
 
-func HandleCollectionList() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		userID := dcontext.GetUserIDFromContext(ctx)
-		if userID == "" {
-			log.Println("userID is empty")
-			response.InternalServerError(w, "Internal Server Error")
-			return
-		}
-		res, err := service.CollectionList(userID)
-		if err != nil {
-			log.Println(err, fmt.Sprintf("failed to get user's collection list %s", userID))
-			response.InternalServerError(w, "Internal Server Error")
-			return
-		}
-		transferredResponse := make([]*collection, 0, len(res.Collections))
-		for _, v := range res.Collections {
-			collection := &collection{
-				CollectionID: v.CollectionID,
-				Name:         v.Name,
-				Rarity:       v.Rarity,
-				HasItem:      v.HasItem,
-			}
-			transferredResponse = append(transferredResponse, collection)
-		}
-		response.Success(w, &collectionListResponse{
-			Collections: transferredResponse,
-		})
+type collectionHandler struct {
+	HttpResponse      response.HttpResponseInterface
+	CollectionService service.CollectionServiceInterface
+}
+
+func NewCollectionHandler(
+	httpResponse response.HttpResponseInterface,
+	collectionService service.CollectionServiceInterface,
+) *collectionHandler {
+	return &collectionHandler{
+		HttpResponse:      httpResponse,
+		CollectionService: collectionService,
 	}
+}
+func (h *collectionHandler) HandleCollectionList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := dcontext.GetUserIDFromContext(ctx)
+	if userID == "" {
+		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		return
+	}
+	res, err := h.CollectionService.CollectionList(userID)
+	if err != nil {
+		h.HttpResponse.Failed(w, fmt.Sprintf("failed to get user's collection list %s", userID), err, http.StatusInternalServerError)
+		return
+	}
+	transferredResponse := make([]*collection, 0, len(res.Collections))
+	for _, v := range res.Collections {
+		collection := &collection{
+			CollectionID: v.CollectionID,
+			Name:         v.Name,
+			Rarity:       v.Rarity,
+			HasItem:      v.HasItem,
+		}
+		transferredResponse = append(transferredResponse, collection)
+	}
+	h.HttpResponse.Success(w, &collectionListResponse{
+		Collections: transferredResponse,
+	})
 }

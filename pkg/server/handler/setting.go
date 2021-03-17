@@ -7,15 +7,22 @@ import (
 	"game-gacha/pkg/http/response"
 )
 
-type SettingGetResponse struct{}
+type settingGetRequest struct{}
 type settingGetResponse struct {
 	GachaCoinConsumption int `json:"gachaCoinConsumption"`
 }
+type settingHandler struct {
+	HttpResponse response.HttpResponseInterface
+}
 
-func HandleSettingGet() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		response.Success(w, &settingGetResponse{
-			GachaCoinConsumption: constant.GachaCoinConsumption,
-		})
+func NewSettingHandler(httpResponse response.HttpResponseInterface) *settingHandler {
+	return &settingHandler{
+		HttpResponse: httpResponse,
 	}
+}
+
+func (h *settingHandler) HandleSettingGet(w http.ResponseWriter, r *http.Request) {
+	h.HttpResponse.Success(w, &settingGetResponse{
+		GachaCoinConsumption: constant.GachaCoinConsumption,
+	})
 }

@@ -10,10 +10,22 @@ import (
 type gameFinishResponse struct {
 	GottenCoin int
 }
+type gameService struct {
+	UserRepository model.UserRepositoryInterface
+}
+type GameServiceInterface interface {
+	GameFinish(userID string, score int) (*gameFinishResponse, error)
+}
 
-func GameFinish(userID string, score int) (*gameFinishResponse, error) {
+func NewGameService(userRepository model.UserRepositoryInterface) *gameService {
+	return &gameService{
+		UserRepository: userRepository,
+	}
+}
+
+func (s *gameService) GameFinish(userID string, score int) (*gameFinishResponse, error) {
 	gottenCoin := int(float64(score) * constant.CoinExchangeRateForScore)
-	user, err := model.SelectUserByPK(userID)
+	user, err := s.UserRepository.SelectUserByPK(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +36,7 @@ func GameFinish(userID string, score int) (*gameFinishResponse, error) {
 	if user.HighScore < score {
 		user.HighScore = score
 	}
-	if err = model.UpdateUserByPK(user); err != nil {
+	if err = s.UserRepository.UpdateUserByPK(user); err != nil {
 		return nil, err
 	}
 	return &gameFinishResponse{
