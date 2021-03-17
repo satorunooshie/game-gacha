@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/http/response"
 	"game-gacha/pkg/server/service"
 )
@@ -38,14 +39,14 @@ func (h *gameHandler) HandleGameFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if finishRequest.Score < 0 {
-		h.HttpResponse.Failed(w, fmt.Sprintf("score validation failed. Score=%d", finishRequest.Score), nil, http.StatusBadRequest)
+		h.HttpResponse.Failed(w, fmt.Sprintf("score validation failed. Score=%d", finishRequest.Score), fmt.Errorf("%w. Score=%d", derror.ErrInvalidRequest, finishRequest.Score), http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
 	userID := dcontext.GetUserIDFromContext(ctx)
 	if userID == "" {
-		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		h.HttpResponse.Failed(w, "userID is empty", derror.ErrEmptyUserID, http.StatusInternalServerError)
 		return
 	}
 	res, err := h.GameService.GameFinish(userID, finishRequest.Score)

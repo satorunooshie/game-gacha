@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"game-gacha/pkg/constant"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/server/model"
 )
 
@@ -30,7 +31,7 @@ func (s *gameService) GameFinish(userID string, score int) (*gameFinishResponse,
 		return nil, err
 	}
 	if user == nil {
-		return nil, fmt.Errorf("user not found. userID=%s", userID)
+		return nil, fmt.Errorf("%w. userID=%s", derror.ErrUserNotFound, userID)
 	}
 	user.Coin += gottenCoin
 	if user.HighScore < score {

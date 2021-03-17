@@ -6,6 +6,7 @@ import (
 
 	"game-gacha/pkg/constant"
 	"game-gacha/pkg/dcontext"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/http/response"
 	"game-gacha/pkg/server/service"
 )
@@ -37,7 +38,7 @@ func NewRankingHandler(
 func (h *rankingHandler) HandleRankingList(w http.ResponseWriter, r *http.Request) {
 	start := r.URL.Query().Get("start")
 	if start == "" {
-		h.HttpResponse.Failed(w, "empty request", nil, http.StatusBadRequest)
+		h.HttpResponse.Failed(w, "empty request", derror.ErrEmptyRequest, http.StatusBadRequest)
 		return
 	}
 	startPosition, err := strconv.Atoi(start)
@@ -49,7 +50,7 @@ func (h *rankingHandler) HandleRankingList(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	userID := dcontext.GetUserIDFromContext(ctx)
 	if userID == "" {
-		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		h.HttpResponse.Failed(w, "userID is empty", derror.ErrEmptyUserID, http.StatusInternalServerError)
 		return
 	}
 	res, err := h.RankingService.RankingList(userID, startPosition, constant.RankingLimit)

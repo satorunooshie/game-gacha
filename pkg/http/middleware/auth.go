@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/http/response"
 	"game-gacha/pkg/server/model"
 )
@@ -33,7 +34,7 @@ func (m *middleware) Authenticate(next http.HandlerFunc) http.HandlerFunc {
 		}
 		token := r.Header.Get("x-token")
 		if token == "" {
-			m.HttpResponse.Failed(w, "x-token is empty", nil, http.StatusBadRequest)
+			m.HttpResponse.Failed(w, "x-token is empty", derror.ErrEmptyToken, http.StatusBadRequest)
 			return
 		}
 		user, err := m.UserRepository.SelectUserByAuthToken(token)

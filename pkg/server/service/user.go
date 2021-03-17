@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/server/model"
 
 	"github.com/google/uuid"
@@ -64,7 +65,7 @@ func (s *userService) UserGet(userID string) (*userGetResponse, error) {
 		return nil, err
 	}
 	if user == nil {
-		return nil, fmt.Errorf("user not found. userID=%s", userID)
+		return nil, fmt.Errorf("%w. userID=%s", derror.ErrUserNotFound, userID)
 	}
 	return &userGetResponse{
 		ID:        user.ID,
@@ -81,7 +82,7 @@ func (s *userService) UserUpdate(userID, name string) error {
 		return err
 	}
 	if user == nil {
-		return fmt.Errorf("user not found. userID=%s", userID)
+		return fmt.Errorf("%w. userID=%s", derror.ErrUserNotFound, userID)
 	}
 	user.Name = name
 	if err = s.UserRepository.UpdateUserByPK(user); err != nil {
