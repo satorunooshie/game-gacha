@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"game-gacha/pkg/db"
 )
 
 type UserCollectionItem struct {
@@ -14,15 +12,30 @@ type UserCollectionItem struct {
 	CollectionItemID string
 	CreatedAt        *time.Time
 }
+type userCollectionItemRepository struct {
+	Conn *sql.DB
+}
+type UserCollectionItemRepositoryInterface interface {
+	SelectUserCollectionItems(userID string) ([]*UserCollectionItem, error)
+	SaveUserCollectionItems(tx *sql.Tx, newItemIDs []string, userID string) error
+}
 
-func SelectUserCollectionItems(userID string) ([]*UserCollectionItem, error) {
-	rows, err := db.Conn.Query("SELECT * FROM user_collection_items WHERE user_id = ?", userID)
+var _ UserCollectionItemRepositoryInterface = (*userCollectionItemRepository)(nil)
+
+func NewUserCollectionItemRepository(conn *sql.DB) *userCollectionItemRepository {
+	return &userCollectionItemRepository{
+		Conn: conn,
+	}
+}
+
+func (r *userCollectionItemRepository) SelectUserCollectionItems(userID string) ([]*UserCollectionItem, error) {
+	rows, err := r.Conn.Query("SELECT * FROM user_collection_items WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, err
 	}
 	return convertToUserCollectionItems(rows)
 }
-func SaveUserCollectionItems(tx *sql.Tx, newItemIDs []string, userID string) error {
+func (r *userCollectionItemRepository) SaveUserCollectionItems(tx *sql.Tx, newItemIDs []string, userID string) error {
 	placeholder := strings.Repeat("(?, ?, ?),", len(newItemIDs))
 	queryArgs := make([]interface{}, 0, len(newItemIDs)*3)
 	for _, itemID := range newItemIDs {

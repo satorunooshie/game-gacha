@@ -2,23 +2,63 @@ package server
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
+	"game-gacha/pkg/db"
 	"game-gacha/pkg/http/middleware"
+	"game-gacha/pkg/http/response"
 	"game-gacha/pkg/server/handler"
+	"game-gacha/pkg/server/model"
+	"game-gacha/pkg/server/service"
 )
 
 func Serve(addr string) {
-	http.HandleFunc("/setting/get", get(handler.HandleSettingGet()))
-	http.HandleFunc("/user/create", post(handler.HandleUserCreate()))
+	rand.Seed(time.Now().UnixNano())
+	httpResponse := response.NewHttpResponse()
+	userRepository := model.NewUserRepository(db.Conn)
+	mid := middleware.NewMiddleware(httpResponse, userRepository)
 
-	http.HandleFunc("/user/get", get(middleware.Authenticate(handler.HandleUserGet())))
-	http.HandleFunc("/user/update", post(middleware.Authenticate(handler.HandleUserUpdate())))
+	gachaProbabilityRepository := model.NewGachaProbabilityRepository(db.Conn)
+	userCollectionItemRepository := model.NewUserCollectionItemRepository(db.Conn)
+	collectionItemRepository := model.NewCollectionItemRepository(db.Conn)
 
-	http.HandleFunc("/gacha/draw", post(middleware.Authenticate(handler.HandleGachaDraw())))
-	http.HandleFunc("/game/finish", post(middleware.Authenticate(handler.HandleGameFinish())))
-	http.HandleFunc("/collection/list", get(middleware.Authenticate(handler.HandleCollectionList())))
-	http.HandleFunc("/ranking/list", get(middleware.Authenticate(handler.HandleRankingList())))
+	userService := service.NewUserService(userRepository)
+	gameService := service.NewGameService(userRepository)
+	gachaService := service.NewGachaService(
+		userRepository,
+		gachaProbabilityRepository,
+		userCollectionItemRepository,
+		collectionItemRepository,
+	)
+	rankingService := service.NewRankingService(userRepository)
+	collectionService := service.NewCollectionService(
+		userRepository,
+		userCollectionItemRepository,
+		collectionItemRepository,
+	)
+
+	userHandler := handler.NewUserHandler(httpResponse, userService)
+	settingHandler := handler.NewSettingHandler(httpResponse)
+	gameHandler := handler.NewGameHandler(httpResponse, gameService)
+	gachaHandler := handler.NewGachaHandler(httpResponse, gachaService)
+	rankingHandler := handler.NewRankingHandler(httpResponse, rankingService)
+	collectionHandler := handler.NewCollectionHandler(httpResponse, collectionService)
+
+	http.HandleFunc("/setting/get", get(settingHandler.HandleSettingGet))
+	http.HandleFunc("/user/create", post(userHandler.HandleUserCreate))
+
+	http.HandleFunc("/user/get", get(mid.Authenticate(userHandler.HandleUserGet)))
+	http.HandleFunc("/user/update", post(mid.Authenticate(userHandler.HandleUserUpdate)))
+
+	http.HandleFunc("/gacha/draw", post(mid.Authenticate(gachaHandler.HandleGachaDraw)))
+
+	http.HandleFunc("/game/finish", post(mid.Authenticate(gameHandler.HandleGameFinish)))
+
+	http.HandleFunc("/collection/list", get(mid.Authenticate(collectionHandler.HandleCollectionList)))
+
+	http.HandleFunc("/ranking/list", get(mid.Authenticate(rankingHandler.HandleRankingList)))
 
 	log.Println("Server is running ...")
 	if err := http.ListenAndServe(addr, nil); err != nil {

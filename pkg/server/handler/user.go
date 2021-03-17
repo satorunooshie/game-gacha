@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
@@ -28,6 +27,76 @@ type userUpdateRequest struct {
 }
 type userUpdateResponse struct{}
 
+type userHandler struct {
+	HttpResponse response.HttpResponseInterface
+	UserService  service.UserServiceInterface
+}
+
+func NewUserHandler(
+	httpResponse response.HttpResponseInterface,
+	userService service.UserServiceInterface,
+) *userHandler {
+	return &userHandler{
+		HttpResponse: httpResponse,
+		UserService:  userService,
+	}
+}
+func (h *userHandler) HandleUserCreate(w http.ResponseWriter, r *http.Request) {
+	var createRequest userCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&createRequest); err != nil {
+		h.HttpResponse.Failed(w, "failed to decode request body", err, http.StatusBadRequest)
+		return
+	}
+	res, err := h.UserService.UserCreate(createRequest.Name)
+	if err != nil {
+		h.HttpResponse.Failed(w, "failed to create user", err, http.StatusInternalServerError)
+		return
+	}
+	transferredResponse := &userCreateResponse{
+		Token: res.Token,
+	}
+	h.HttpResponse.Success(w, transferredResponse)
+}
+func (h *userHandler) HandleUserGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := dcontext.GetUserIDFromContext(ctx)
+	if userID == "" {
+		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		return
+	}
+	user, err := h.UserService.UserGet(userID)
+	if err != nil {
+		h.HttpResponse.Failed(w, "failed to get user", err, http.StatusInternalServerError)
+		return
+	}
+	transferredResponse := &userGetResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		HighScore: user.HighScore,
+		Coin:      user.Coin,
+	}
+	h.HttpResponse.Success(w, transferredResponse)
+}
+func (h *userHandler) HandleUserUpdate(w http.ResponseWriter, r *http.Request) {
+	var updateRequest userUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&updateRequest); err != nil {
+		h.HttpResponse.Failed(w, "failed to decode request body", err, http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	userID := dcontext.GetUserIDFromContext(ctx)
+	if userID == "" {
+		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		return
+	}
+	if err := h.UserService.UserUpdate(userID, updateRequest.Name); err != nil {
+		h.HttpResponse.Failed(w, "failed to update user", err, http.StatusInternalServerError)
+		return
+	}
+	h.HttpResponse.Success(w, nil)
+}
+
+/*
 func HandleUserCreate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var createRequest userCreateRequest
@@ -95,3 +164,5 @@ func HandleUserUpdate() http.HandlerFunc {
 		response.Success(w, nil)
 	}
 }
+
+*/

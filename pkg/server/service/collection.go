@@ -13,12 +13,32 @@ type collection struct {
 	Rarity       int
 	HasItem      bool
 }
+type collectionService struct {
+	UserRepository               model.UserRepositoryInterface
+	UserCollectionItemRepository model.UserCollectionItemRepositoryInterface
+	CollectionItemRepository     model.CollectionItemRepositoryInterface
+}
+type CollectionServiceInterface interface {
+	CollectionList(userID string) (*collectionListResponse, error)
+}
 
-func CollectionList(userID string) (*collectionListResponse, error) {
-	if _, err := model.SelectUserByPK(userID); err != nil {
+func NewCollectionService(
+	userRepository model.UserRepositoryInterface,
+	userCollectionItemRepository model.UserCollectionItemRepositoryInterface,
+	collectionItemRepository model.CollectionItemRepositoryInterface,
+) *collectionService {
+	return &collectionService{
+		UserRepository:               userRepository,
+		UserCollectionItemRepository: userCollectionItemRepository,
+		CollectionItemRepository:     collectionItemRepository,
+	}
+}
+
+func (s *collectionService) CollectionList(userID string) (*collectionListResponse, error) {
+	if _, err := s.UserRepository.SelectUserByPK(userID); err != nil {
 		return nil, err
 	}
-	userCollectionItems, err := model.SelectUserCollectionItems(userID)
+	userCollectionItems, err := s.UserCollectionItemRepository.SelectUserCollectionItems(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +46,7 @@ func CollectionList(userID string) (*collectionListResponse, error) {
 	for _, item := range userCollectionItems {
 		userCollectionItemIDMap[item.CollectionItemID] = struct{}{}
 	}
-	masterCollections, err := model.SelectAllCollectionItems()
+	masterCollections, err := s.CollectionItemRepository.SelectAllCollectionItems()
 	if err != nil {
 		return nil, err
 	}

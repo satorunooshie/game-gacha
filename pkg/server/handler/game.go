@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"game-gacha/pkg/dcontext"
@@ -17,37 +16,45 @@ type gameFinishRequest struct {
 type gameFinishResponse struct {
 	Coin int `json:"coin"`
 }
+type gameHandler struct {
+	HttpResponse response.HttpResponseInterface
+	GameService  service.GameServiceInterface
+}
 
-func HandleGameFinish() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var finishRequest gameFinishRequest
-		if err := json.NewDecoder(r.Body).Decode(&finishRequest); err != nil {
-			log.Println(err, "failed to decode json request")
-			response.BadRequest(w, "Bad Request")
-			return
-		}
-		if finishRequest.Score < 0 {
-			log.Println(fmt.Errorf("score validation failed. Score=%d", finishRequest.Score))
-			response.BadRequest(w, "Bad Request")
-			return
-		}
-
-		ctx := r.Context()
-		userID := dcontext.GetUserIDFromContext(ctx)
-		if userID == "" {
-			log.Println("userID is empty")
-			response.InternalServerError(w, "Internal Server Error")
-			return
-		}
-		res, err := service.GameFinish(userID, finishRequest.Score)
-		if err != nil {
-			log.Println(err, "failed to finish game")
-			response.InternalServerError(w, "Internal Server Error")
-			return
-		}
-		transferredResponse := &gameFinishResponse{
-			Coin: res.GottenCoin,
-		}
-		response.Success(w, transferredResponse)
+func NewGameHandler(
+	httpResponse response.HttpResponseInterface,
+	gameService service.GameServiceInterface,
+) *gameHandler {
+	return &gameHandler{
+		HttpResponse: httpResponse,
+		GameService:  gameService,
 	}
+}
+
+func (h *gameHandler) HandleGameFinish(w http.ResponseWriter, r *http.Request) {
+	var finishRequest gameFinishRequest
+	if err := json.NewDecoder(r.Body).Decode(&finishRequest); err != nil {
+		h.HttpResponse.Failed(w, "failed to decode request body", err, http.StatusBadRequest)
+		return
+	}
+	if finishRequest.Score < 0 {
+		h.HttpResponse.Failed(w, fmt.Sprintf("score validation failed. Score=%d", finishRequest.Score), nil, http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	userID := dcontext.GetUserIDFromContext(ctx)
+	if userID == "" {
+		h.HttpResponse.Failed(w, "userID is Empty", nil, http.StatusInternalServerError)
+		return
+	}
+	res, err := h.GameService.GameFinish(userID, finishRequest.Score)
+	if err != nil {
+		h.HttpResponse.Failed(w, "failed to finish game", err, http.StatusInternalServerError)
+		return
+	}
+	transferredResponse := &gameFinishResponse{
+		Coin: res.GottenCoin,
+	}
+	h.HttpResponse.Success(w, transferredResponse)
 }

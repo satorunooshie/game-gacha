@@ -3,8 +3,6 @@ package model
 import (
 	"database/sql"
 	"time"
-
-	"game-gacha/pkg/db"
 )
 
 type CollectionItem struct {
@@ -13,9 +11,23 @@ type CollectionItem struct {
 	Rarity    int
 	CreatedAt *time.Time
 }
+type collectionItemRepository struct {
+	Conn *sql.DB
+}
+type CollectionItemRepositoryInterface interface {
+	SelectAllCollectionItems() ([]*CollectionItem, error)
+}
 
-func SelectAllCollectionItems() ([]*CollectionItem, error) {
-	rows, err := db.Conn.Query("SELECT * FROM collection_items")
+var _ CollectionItemRepositoryInterface = (*collectionItemRepository)(nil)
+
+func NewCollectionItemRepository(conn *sql.DB) *collectionItemRepository {
+	return &collectionItemRepository{
+		Conn: conn,
+	}
+}
+
+func (r *collectionItemRepository) SelectAllCollectionItems() ([]*CollectionItem, error) {
+	rows, err := r.Conn.Query("SELECT * FROM collection_items")
 	if err != nil {
 		return nil, err
 	}

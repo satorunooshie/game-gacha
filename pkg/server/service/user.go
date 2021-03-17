@@ -19,8 +19,24 @@ type userGetResponse struct {
 	Coin      int
 }
 type userUpdateResponse struct{}
+type userService struct {
+	UserRepository model.UserRepositoryInterface
+}
 
-func UserCreate(name string) (*userCreateResponse, error) {
+func NewUserService(userRepository model.UserRepositoryInterface) *userService {
+	return &userService{
+		UserRepository: userRepository,
+	}
+}
+
+// TODO: make interface smaller
+type UserServiceInterface interface {
+	UserCreate(name string) (*userCreateResponse, error)
+	UserGet(userID string) (*userGetResponse, error)
+	UserUpdate(userID, name string) error
+}
+
+func (s *userService) UserCreate(name string) (*userCreateResponse, error) {
 	userID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -29,7 +45,7 @@ func UserCreate(name string) (*userCreateResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = model.InsertUser(&model.User{
+	err = s.UserRepository.InsertUser(&model.User{
 		ID:        userID.String(),
 		AuthToken: authToken.String(),
 		Name:      name,
@@ -42,8 +58,8 @@ func UserCreate(name string) (*userCreateResponse, error) {
 	return &userCreateResponse{Token: authToken.String()}, nil
 }
 
-func UserGet(userID string) (*userGetResponse, error) {
-	user, err := model.SelectUserByPK(userID)
+func (s *userService) UserGet(userID string) (*userGetResponse, error) {
+	user, err := s.UserRepository.SelectUserByPK(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +75,8 @@ func UserGet(userID string) (*userGetResponse, error) {
 	}, nil
 }
 
-func UserUpdate(userID string, name string) error {
-	user, err := model.SelectUserByPK(userID)
+func (s *userService) UserUpdate(userID, name string) error {
+	user, err := s.UserRepository.SelectUserByPK(userID)
 	if err != nil {
 		return err
 	}
@@ -68,7 +84,7 @@ func UserUpdate(userID string, name string) error {
 		return fmt.Errorf("user not found. userID=%s", userID)
 	}
 	user.Name = name
-	if err = model.UpdateUserByPK(user); err != nil {
+	if err = s.UserRepository.UpdateUserByPK(user); err != nil {
 		return err
 	}
 	return nil
