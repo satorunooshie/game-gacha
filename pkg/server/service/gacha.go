@@ -3,11 +3,11 @@ package service
 import (
 	"database/sql"
 	"fmt"
-	"game-gacha/pkg/derror"
 	"math/rand"
 
 	"game-gacha/pkg/constant"
 	"game-gacha/pkg/db"
+	"game-gacha/pkg/derror"
 	"game-gacha/pkg/server/model"
 )
 
@@ -24,11 +24,34 @@ type collectionItem struct {
 	Name   string
 	Rarity int
 }
+type gachaService struct {
+	UserRepository               model.UserRepositoryInterface
+	GachaProbabilityRepository   model.GachaProbabilityRepositoryInterface
+	UserCollectionItemRepository model.UserCollectionItemRepositoryInterface
+	CollectionItemRepository     model.CollectionItemRepositoryInterface
+}
+type GachaServiceInterface interface {
+	GachaDraw(userID string, times int) (*gachaDrawResponse, error)
+}
 
-func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
+func NewGachaService(
+	userRepository model.UserRepositoryInterface,
+	gachaProbabilityRepository model.GachaProbabilityRepositoryInterface,
+	userCollectionItemRepository model.UserCollectionItemRepositoryInterface,
+	collectionItemRepository model.CollectionItemRepositoryInterface,
+) *gachaService {
+	return &gachaService{
+		UserRepository:               userRepository,
+		GachaProbabilityRepository:   gachaProbabilityRepository,
+		UserCollectionItemRepository: userCollectionItemRepository,
+		CollectionItemRepository:     collectionItemRepository,
+	}
+}
+
+func (s *gachaService) GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 	results := make([]*result, 0, times)
 	if err := db.DB.Transaction(func(tx *sql.Tx) error {
-		user, err := model.SelectUserByPKForUpdate(tx, userID)
+		user, err := s.UserRepository.SelectUserByPKForUpdate(tx, userID)
 		if err != nil {
 			return err
 		}
@@ -39,7 +62,7 @@ func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 		if remainingCoins < 0 {
 			return fmt.Errorf("%w. shortage=%d", derror.ErrCoinShortage, remainingCoins)
 		}
-		userCollectionItems, err := model.SelectUserCollectionItems(userID)
+		userCollectionItems, err := s.UserCollectionItemRepository.SelectUserCollectionItems(userID)
 		if err != nil {
 			return err
 		}
@@ -47,7 +70,7 @@ func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 		for _, item := range userCollectionItems {
 			userCollectionItemIDMap[item.CollectionItemID] = struct{}{}
 		}
-		collections, err := model.SelectAllCollectionItems()
+		collections, err := s.CollectionItemRepository.SelectAllCollectionItems()
 		if err != nil {
 			return err
 		}
@@ -58,7 +81,7 @@ func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 				Rarity: collection.Rarity,
 			}
 		}
-		gachaProbabilities, err := model.SelectGachaProbabilities()
+		gachaProbabilities, err := s.GachaProbabilityRepository.SelectGachaProbabilities()
 		if err != nil {
 			return err
 		}
@@ -78,6 +101,7 @@ func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 				tmpRate += gachaProbability.Ratio
 				if tmpRate > random {
 					selectedItemID = gachaProbability.CollectionItemID
+					break
 				}
 			}
 			if _, ok := userCollectionItemIDMap[selectedItemID]; !ok {
@@ -95,11 +119,11 @@ func GachaDraw(userID string, times int) (*gachaDrawResponse, error) {
 		}
 		user.Coin = remainingCoins
 		if len(newItemIDs) > 0 {
-			if err = model.SaveUserCollectionItems(tx, newItemIDs, userID); err != nil {
+			if err = s.UserCollectionItemRepository.SaveUserCollectionItems(tx, newItemIDs, userID); err != nil {
 				return err
 			}
 		}
-		if err = model.UpdateUserCoinByPK(tx, user.Coin, userID); err != nil {
+		if err = s.UserRepository.UpdateUserCoinByPK(tx, user.Coin, userID); err != nil {
 			return err
 		}
 		return nil

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"game-gacha/pkg/constant"
-	"game-gacha/pkg/db"
 )
 
 type User struct {
@@ -17,9 +16,31 @@ type User struct {
 	CreatedAt *time.Time
 	UpdatedAt *time.Time
 }
+type userRepository struct {
+	Conn *sql.DB
+}
 
-func InsertUser(user *User) error {
-	stmt, err := db.Conn.Prepare("INSERT INTO users(id, auth_token, name, high_score, coin, created_at) VALUES(?, ?, ?, ?, ?, ?)")
+// TODO: make interface smaller
+type UserRepositoryInterface interface {
+	InsertUser(user *User) error
+	SelectUserByPK(userID string) (*User, error)
+	SelectUserByPKForUpdate(tx *sql.Tx, userID string) (*User, error)
+	SelectUserByAuthToken(authToken string) (*User, error)
+	SelectUsersOrderByHighScore(startPosition, limit int) ([]*User, error)
+	UpdateUserByPK(user *User) error
+	UpdateUserCoinByPK(tx *sql.Tx, coin int, userID string) error
+}
+
+var _ UserRepositoryInterface = (*userRepository)(nil)
+
+func NewUserRepository(conn *sql.DB) *userRepository {
+	return &userRepository{
+		Conn: conn,
+	}
+}
+
+func (r *userRepository) InsertUser(user *User) error {
+	stmt, err := r.Conn.Prepare("INSERT INTO users(id, auth_token, name, high_score, coin, created_at) VALUES(?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -28,20 +49,27 @@ func InsertUser(user *User) error {
 	}
 	return nil
 }
-func SelectUserByPK(userID string) (*User, error) {
-	row := db.Conn.QueryRow("SELECT * FROM users WHERE id = ?", userID)
+func (r *userRepository) SelectUserByPK(userID string) (*User, error) {
+	row := r.Conn.QueryRow("SELECT * FROM users WHERE id = ?", userID)
 	return convertToUser(row)
 }
-func SelectUserByPKForUpdate(tx *sql.Tx, userID string) (*User, error) {
+func (r *userRepository) SelectUserByPKForUpdate(tx *sql.Tx, userID string) (*User, error) {
 	row := tx.QueryRow("SELECT * FROM users WHERE id = ? FOR UPDATE", userID)
 	return convertToUser(row)
 }
-func SelectUserByAuthToken(authToken string) (*User, error) {
-	row := db.Conn.QueryRow("SELECT * FROM users WHERE auth_token = ?", authToken)
+func (r *userRepository) SelectUserByAuthToken(authToken string) (*User, error) {
+	row := r.Conn.QueryRow("SELECT * FROM users WHERE auth_token = ?", authToken)
 	return convertToUser(row)
 }
-func UpdateUserByPK(user *User) error {
-	stmt, err := db.Conn.Prepare("UPDATE users SET name = ?, high_score = ?, coin = ?, updated_at = ? WHERE id = ?")
+func (r *userRepository) SelectUsersOrderByHighScore(startPosition, limit int) ([]*User, error) {
+	rows, err := r.Conn.Query("SELECT * FROM users WHERE high_score > 0 ORDER BY high_score DESC, id ASC LIMIT ? OFFSET ?", limit, startPosition)
+	if err != nil {
+		return nil, err
+	}
+	return convertToUsers(rows)
+}
+func (r *userRepository) UpdateUserByPK(user *User) error {
+	stmt, err := r.Conn.Prepare("UPDATE users SET name = ?, high_score = ?, coin = ?, updated_at = ? WHERE id = ?")
 	if err != nil {
 		return err
 	}
@@ -50,7 +78,7 @@ func UpdateUserByPK(user *User) error {
 	}
 	return nil
 }
-func UpdateUserCoinByPK(tx *sql.Tx, coin int, userID string) error {
+func (r *userRepository) UpdateUserCoinByPK(tx *sql.Tx, coin int, userID string) error {
 	stmt, err := tx.Prepare("UPDATE users SET coin = ?, updated_at = ? WHERE id = ?")
 	if err != nil {
 		return err
@@ -59,13 +87,6 @@ func UpdateUserCoinByPK(tx *sql.Tx, coin int, userID string) error {
 		return err
 	}
 	return nil
-}
-func SelectUsersOrderByHighScore(startPosition, limit int) ([]*User, error) {
-	rows, err := db.Conn.Query("SELECT * FROM users WHERE high_score > 0 ORDER BY high_score DESC, id ASC LIMIT ? OFFSET ?", limit, startPosition)
-	if err != nil {
-		return nil, err
-	}
-	return convertToUsers(rows)
 }
 func convertToUser(row *sql.Row) (*User, error) {
 	user := User{}
