@@ -24,11 +24,16 @@ type rankingHandler struct {
 	HttpResponse   response.HttpResponseInterface
 	RankingService service.RankingServiceInterface
 }
+type RankingHandlerInterface interface {
+	HandleRankingList(w http.ResponseWriter, r *http.Request)
+}
+
+var _ RankingHandlerInterface = (*rankingHandler)(nil)
 
 func NewRankingHandler(
 	httpResponse response.HttpResponseInterface,
 	rankingService service.RankingServiceInterface,
-) *rankingHandler {
+) RankingHandlerInterface {
 	return &rankingHandler{
 		HttpResponse:   httpResponse,
 		RankingService: rankingService,

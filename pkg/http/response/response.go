@@ -14,7 +14,7 @@ type HttpResponseInterface interface {
 	Failed(w http.ResponseWriter, message string, err error, code int)
 }
 
-func NewHttpResponse() *httpResponse {
+func NewHttpResponse() HttpResponseInterface {
 	return &httpResponse{}
 }
 

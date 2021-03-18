@@ -28,11 +28,16 @@ type gachaHandler struct {
 	HttpResponse response.HttpResponseInterface
 	GachaService service.GachaServiceInterface
 }
+type GachaHandlerInterface interface {
+	HandleGachaDraw(w http.ResponseWriter, r *http.Request)
+}
+
+var _ GachaHandlerInterface = (*gachaHandler)(nil)
 
 func NewGachaHandler(
 	httpResponse response.HttpResponseInterface,
 	gachaService service.GachaServiceInterface,
-) *gachaHandler {
+) GachaHandlerInterface {
 	return &gachaHandler{
 		HttpResponse: httpResponse,
 		GachaService: gachaService,

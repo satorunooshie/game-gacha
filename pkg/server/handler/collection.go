@@ -25,11 +25,16 @@ type collectionHandler struct {
 	HttpResponse      response.HttpResponseInterface
 	CollectionService service.CollectionServiceInterface
 }
+type CollectionHandlerInterface interface {
+	HandleCollectionList(w http.ResponseWriter, r *http.Request)
+}
+
+var _ CollectionHandlerInterface = (*collectionHandler)(nil)
 
 func NewCollectionHandler(
 	httpResponse response.HttpResponseInterface,
 	collectionService service.CollectionServiceInterface,
-) *collectionHandler {
+) CollectionHandlerInterface {
 	return &collectionHandler{
 		HttpResponse:      httpResponse,
 		CollectionService: collectionService,
