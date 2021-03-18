@@ -14,8 +14,13 @@ type settingGetResponse struct {
 type settingHandler struct {
 	HttpResponse response.HttpResponseInterface
 }
+type SettingHandlerInterface interface {
+	HandleSettingGet(w http.ResponseWriter, r *http.Request)
+}
 
-func NewSettingHandler(httpResponse response.HttpResponseInterface) *settingHandler {
+var _ SettingHandlerInterface = (*settingHandler)(nil)
+
+func NewSettingHandler(httpResponse response.HttpResponseInterface) SettingHandlerInterface {
 	return &settingHandler{
 		HttpResponse: httpResponse,
 	}

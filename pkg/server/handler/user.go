@@ -32,11 +32,18 @@ type userHandler struct {
 	HttpResponse response.HttpResponseInterface
 	UserService  service.UserServiceInterface
 }
+type UserHandlerInterface interface {
+	HandleUserCreate(w http.ResponseWriter, r *http.Request)
+	HandleUserGet(w http.ResponseWriter, r *http.Request)
+	HandleUserUpdate(w http.ResponseWriter, r *http.Request)
+}
+
+var _ UserHandlerInterface = (*userHandler)(nil)
 
 func NewUserHandler(
 	httpResponse response.HttpResponseInterface,
 	userService service.UserServiceInterface,
-) *userHandler {
+) UserHandlerInterface {
 	return &userHandler{
 		HttpResponse: httpResponse,
 		UserService:  userService,

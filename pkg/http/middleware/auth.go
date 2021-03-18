@@ -15,6 +15,11 @@ type middleware struct {
 	HttpResponse   response.HttpResponseInterface
 	UserRepository model.UserRepositoryInterface
 }
+type MiddlewareInterface interface {
+	Authenticate(next http.HandlerFunc) http.HandlerFunc
+}
+
+var _ MiddlewareInterface = (*middleware)(nil)
 
 func NewMiddleware(
 	httpResponse response.HttpResponseInterface,

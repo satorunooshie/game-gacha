@@ -21,11 +21,16 @@ type gameHandler struct {
 	HttpResponse response.HttpResponseInterface
 	GameService  service.GameServiceInterface
 }
+type GameHandlerInterface interface {
+	HandleGameFinish(w http.ResponseWriter, r *http.Request)
+}
+
+var _ GameHandlerInterface = (*gameHandler)(nil)
 
 func NewGameHandler(
 	httpResponse response.HttpResponseInterface,
 	gameService service.GameServiceInterface,
-) *gameHandler {
+) GameHandlerInterface {
 	return &gameHandler{
 		HttpResponse: httpResponse,
 		GameService:  gameService,

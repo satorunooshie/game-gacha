@@ -14,8 +14,11 @@ import (
 	"game-gacha/pkg/server/service"
 )
 
-func Serve(addr string) {
+func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+func Serve(addr string) {
 	httpResponse := response.NewHttpResponse()
 	userRepository := model.NewUserRepository(db.Conn)
 	mid := middleware.NewMiddleware(httpResponse, userRepository)
