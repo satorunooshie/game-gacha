@@ -34,6 +34,8 @@ type GachaServiceInterface interface {
 	GachaDraw(userID string, times int) (*gachaDrawResponse, error)
 }
 
+var _ GachaServiceInterface = (*gachaService)(nil)
+
 func NewGachaService(
 	userRepository model.UserRepositoryInterface,
 	gachaProbabilityRepository model.GachaProbabilityRepositoryInterface,
