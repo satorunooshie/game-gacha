@@ -20,6 +20,8 @@ type RankingServiceInterface interface {
 	RankingList(userID string, startPosition, limit int) (*rankingListResponse, error)
 }
 
+var _ RankingServiceInterface = (*rankingService)(nil)
+
 func NewRankingService(userRepository model.UserRepositoryInterface) *rankingService {
 	return &rankingService{
 		UserRepository: userRepository,
