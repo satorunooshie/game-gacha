@@ -22,6 +22,8 @@ type CollectionServiceInterface interface {
 	CollectionList(userID string) (*collectionListResponse, error)
 }
 
+var _ CollectionServiceInterface = (*collectionService)(nil)
+
 func NewCollectionService(
 	userRepository model.UserRepositoryInterface,
 	userCollectionItemRepository model.UserCollectionItemRepositoryInterface,
