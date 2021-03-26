@@ -24,6 +24,8 @@ type userService struct {
 	UserRepository model.UserRepositoryInterface
 }
 
+var _ UserServiceInterface = (*userService)(nil)
+
 func NewUserService(userRepository model.UserRepositoryInterface) *userService {
 	return &userService{
 		UserRepository: userRepository,
