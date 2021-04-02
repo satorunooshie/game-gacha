@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type CollectionItem struct {
@@ -14,14 +16,23 @@ type CollectionItem struct {
 type collectionItemRepository struct {
 	Conn *sql.DB
 }
+type collectionItemRepository2 struct {
+	Conn *gorm.DB
+}
 type CollectionItemRepositoryInterface interface {
 	SelectAllCollectionItems() ([]*CollectionItem, error)
 }
 
 var _ CollectionItemRepositoryInterface = (*collectionItemRepository)(nil)
+var _ CollectionItemRepositoryInterface = (*collectionItemRepository2)(nil)
 
 func NewCollectionItemRepository(conn *sql.DB) *collectionItemRepository {
 	return &collectionItemRepository{
+		Conn: conn,
+	}
+}
+func NewCollectionItemRepository2(conn *gorm.DB) *collectionItemRepository2 {
+	return &collectionItemRepository2{
 		Conn: conn,
 	}
 }
@@ -44,4 +55,12 @@ func convertToCollectionItems(rows *sql.Rows) ([]*CollectionItem, error) {
 		collectionItems = append(collectionItems, &collectionItem)
 	}
 	return collectionItems, nil
+}
+
+func (r *collectionItemRepository2) SelectAllCollectionItems() ([]*CollectionItem, error) {
+	items := []*CollectionItem(nil)
+	if err := r.Conn.Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }
