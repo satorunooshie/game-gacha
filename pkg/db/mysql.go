@@ -7,16 +7,16 @@ import (
 	"os"
 
 	"game-gacha/pkg/constant"
+	"game-gacha/pkg/env"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 )
 
 var Conn *sql.DB
 
 func init() {
 	var err error
-	err = godotenv.Load("./.env")
+	err = env.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
